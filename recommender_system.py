@@ -119,47 +119,39 @@ print(popularity_recommender(books, top_n=10))
 
 content_books = books.copy()
 
-# Fill missing text values
 content_books["authors"] = content_books["authors"].fillna("")
 content_books["title"] = content_books["title"].fillna("")
 
-# Convert author names into numerical vectors using TF-IDF
+content_books = content_books.drop_duplicates(subset=["title"]).reset_index(drop=True)
+
 tfidf = TfidfVectorizer(stop_words="english")
 
 tfidf_matrix = tfidf.fit_transform(content_books["authors"])
 
-# Calculate cosine similarity between books
 cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
-# Create a mapping between book titles and row index
-indices = pd.Series(content_books.index, index=content_books["title"]).drop_duplicates()
-
+indices = pd.Series(
+    content_books.index,
+    index=content_books["title"]
+)
 
 def content_based_recommender(title, top_n=10):
-    """
-    This function recommends books similar to a selected book.
 
-    The similarity is based on the authors column.
-    TF-IDF is used to convert author names into vectors.
-    Cosine similarity is used to compare books.
-    """
-
-    if title not in indices:
+    if title not in indices.index:
         return "Book title not found in the dataset."
 
-    # Get the index of the selected book
     idx = indices[title]
 
-    # Get similarity scores
     sim_scores = list(enumerate(cosine_sim[idx]))
 
-    # Sort books by similarity score
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sorted(
+        sim_scores,
+        key=lambda x: x[1],
+        reverse=True
+    )
 
-    # Remove the selected book itself
     sim_scores = sim_scores[1:top_n + 1]
 
-    # Get recommended book indices
     book_indices = [i[0] for i in sim_scores]
 
     recommendations = content_books.iloc[book_indices][
@@ -171,7 +163,9 @@ def content_based_recommender(title, top_n=10):
         ]
     ].copy()
 
-    recommendations["similarity_score"] = [i[1] for i in sim_scores]
+    recommendations["similarity_score"] = [
+        i[1] for i in sim_scores
+    ]
 
     return recommendations
 
